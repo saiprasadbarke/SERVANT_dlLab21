@@ -1,6 +1,6 @@
 from typing import List, Dict
 from numpy.random import uniform
-from json import dumps
+from json import dumps, dump
 
 
 class GenerateDatasets:
@@ -38,6 +38,13 @@ class GenerateDatasets:
             dictionary_of_xy_values[x] = value
         return dictionary_of_xy_values
 
+    @staticmethod
+    def write_dataset_to_file(
+        dictionary_of_xy_values_for_equations: Dict[str, Dict[float, float]]
+    ):
+        with open("datasets_equations.json", "w") as outfile:
+            dump(dictionary_of_xy_values_for_equations, outfile, indent=4)
+
 
 if __name__ == "__main__":
     list_of_equations = [
@@ -49,3 +56,4 @@ if __name__ == "__main__":
     datesets_dict = dataset_generator.generate_xy_datasets()
     # dumps makes the float X values in keys into strings
     print(dumps(datesets_dict, indent=4))
+    GenerateDatasets.write_dataset_to_file(datesets_dict)
