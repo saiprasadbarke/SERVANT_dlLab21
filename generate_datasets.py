@@ -1,6 +1,7 @@
 from typing import List, Dict
 from numpy.random import uniform
 from json import dumps, dump
+from os import mkdir, path
 
 
 class GenerateDatasets:
@@ -40,10 +41,20 @@ class GenerateDatasets:
 
     @staticmethod
     def write_dataset_to_file(
-        dictionary_of_xy_values_for_equations: Dict[str, Dict[float, float]]
+        dictionary_of_xy_values_for_equations: Dict[str, Dict[float, float]],
+        root_dir: str,
     ):
-        with open("datasets_equations.json", "w") as outfile:
-            dump(dictionary_of_xy_values_for_equations, outfile, indent=4)
+
+        if not path.isdir(root_dir):
+            mkdir(root_dir)
+        for idx, (key, value) in enumerate(
+            dictionary_of_xy_values_for_equations.items()
+        ):
+            equation_json = dict()
+            equation_json["equation"] = key
+            equation_json["xy_values"] = value
+            with open(f"{root_dir}/Equation{idx+1}.json", "w") as outfile:
+                dump(equation_json, outfile, indent=4)
 
 
 if __name__ == "__main__":
@@ -51,9 +62,11 @@ if __name__ == "__main__":
         ["3", "*", "x", "*", "x", "+", "2", "*", "x", "+", "1"],
         ["5", "*", "x", "-", "3"],
     ]
-    X_values = uniform(-1, 1, 5)
+    X_values = uniform(-1, 1, 5000).astype(dtype="float64", copy=False)
+    root_dir = "./datasets"
     dataset_generator = GenerateDatasets(equations=list_of_equations, X_values=X_values)
     datesets_dict = dataset_generator.generate_xy_datasets()
     # dumps makes the float X values in keys into strings
+
     print(dumps(datesets_dict, indent=4))
-    GenerateDatasets.write_dataset_to_file(datesets_dict)
+    GenerateDatasets.write_dataset_to_file(datesets_dict, root_dir=root_dir)
