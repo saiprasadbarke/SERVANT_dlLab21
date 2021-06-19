@@ -7,10 +7,30 @@ import re
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lower-bound", type=int, default=-5, help="lower bound for generating constants")
-    parser.add_argument("--upper-bound", type=int, default=5, help="upper bound for generating constants")
-    parser.add_argument("--round-digits", type=int, default=3, help="number of round digits for floating numbers")
-    parser.add_argument("--number-of-equations", type=int, default=5000, help="number of random quadratics to generate")
+    parser.add_argument(
+        "--lower-bound",
+        type=int,
+        default=-5,
+        help="lower bound for generating constants",
+    )
+    parser.add_argument(
+        "--upper-bound",
+        type=int,
+        default=5,
+        help="upper bound for generating constants",
+    )
+    parser.add_argument(
+        "--round-digits",
+        type=int,
+        default=3,
+        help="number of round digits for floating numbers",
+    )
+    parser.add_argument(
+        "--number-of-equations",
+        type=int,
+        default=2,
+        help="number of random quadratics to generate",
+    )
     args = parser.parse_args()
     return args
 
@@ -25,7 +45,9 @@ class RandomQuadratic:
     the substitions will not be need, however at the moment we utilize the former.
     """
 
-    def __init__(self, lower_bound: int = None, upper_bound: int = None, round_digits: int = None):
+    def __init__(
+        self, lower_bound: int = None, upper_bound: int = None, round_digits: int = None
+    ):
         """
         Args:
             lower_bound: lower bound for generating constants
@@ -61,9 +83,21 @@ class RandomQuadratic:
         Generates a quadratic equation as specified in the class description.
         """
         if self.a == 0:
-            self.equation = str(choice(["+", "-"]) + str(self.b) + "*x" + choice(["+", "-"]) + str(self.c))
+            self.equation = str(
+                choice(["+", "-"])
+                + str(self.b)
+                + "*x"
+                + choice(["+", "-"])
+                + str(self.c)
+            )
         elif self.b == 0:
-            self.equation = str(choice(["+", "-"]) + str(self.a) + "*x*x" + choice(["+", "-"]) + str(self.c))
+            self.equation = str(
+                choice(["+", "-"])
+                + str(self.a)
+                + "*x*x"
+                + choice(["+", "-"])
+                + str(self.c)
+            )
         else:
             self.equation = str(
                 choice(["+", "-"])
@@ -99,7 +133,9 @@ if __name__ == "__main__":
     equations = []
 
     for _ in range(args.number_of_equations):
-        equation = RandomQuadratic(args.lower_bound, args.upper_bound, args.round_digits)
+        equation = RandomQuadratic(
+            args.lower_bound, args.upper_bound, args.round_digits
+        )
         equations.append(equation())
 
     pprint(equations)
