@@ -57,7 +57,6 @@ class RandomQuadratic:
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.round_digits = round_digits
-        self
         self.a = self.generate_number()
         self.b = self.generate_number()
         self.c = self.generate_number()
