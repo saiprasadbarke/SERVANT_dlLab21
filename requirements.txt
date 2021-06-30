@@ -1,0 +1,12 @@
+numpy
+matplotlib
+seaborn
+autoPyTorch
+black
+jupyter
+ConfigSpace
+hpbandster
+pandas
+scipy
+torch
+tensorboard
