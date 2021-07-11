@@ -43,4 +43,5 @@ if __name__ == "__main__":
     dir = "./network_wts_eqs_dataset/Equation1.json"
     json_file = open(dir)
     equation_embedder = EquationEmbedding(equation=json.load(json_file)["equation"])
-    print(equation_embedder.embedding_module())
+    array = equation_embedder.embedding_module()
+    print(array)

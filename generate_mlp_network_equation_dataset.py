@@ -7,7 +7,7 @@ from train_eval import train_model, eval_model
 from sklearn.model_selection import train_test_split
 from os import mkdir, path
 from simple_mlp import Simple_MLP
-
+import sys
 
 def write_data_to_file(equation_number, equation_name, networks_weights, train_losses, validation_losses):
     root_dir = "./network_wts_eqs_dataset"
@@ -22,11 +22,12 @@ def write_data_to_file(equation_number, equation_name, networks_weights, train_l
     with open(f"{root_dir}/Equation{equation_number}.json", "w") as outfile:
         dump(equation_json, outfile, indent=4)
 
-def train_networks_save_weights():
+def train_networks_save_weights(train_eq_start):
     root_dir = "./datasets"
-    for equation_number in range(1, 6):
+    equation_json = dict()
+    for equation_number in range(train_eq_start, train_eq_start+26):
         equation_data = EquationsDataset(dataset_file_path=f"{root_dir}/Equation{equation_number}.json")
-        print(f"generating mlp network weight for : {equation_data.equation_name}")
+        print(f"generating mlp network weight for equation_number:{equation_number} equation: {equation_data.equation_name}")
 
         train_values_x = train_values_y = test_values_x = test_values_y = None
         train_values_x, train_values_y = equation_data.x_values[:4000], equation_data.y_values[:4000] 
@@ -46,22 +47,28 @@ def train_networks_save_weights():
         val_loader = DataLoader(val_data, batch_size=1, shuffle=True)
 
         model = Simple_MLP(1, 8, 1)
-        print(model)
+        #print(model)
 
         epochs = 1
         optimizer  = optim.Adam(model.parameters(), lr=1e-05)
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=20, eta_min=1e-05)
         criterion = nn.MSELoss()
 
-        mlp_state_dict, train_losses, validation_losses = train_model(train_loader, val_loader, epochs, model, optimizer, scheduler, criterion)
+        mlp_state_dict = train_model(train_loader, val_loader, epochs, model, optimizer, scheduler, criterion)
         networks_weights = []
         for keys in mlp_state_dict.keys():
             if "bias" not in keys:
                 networks_weights.append(mlp_state_dict[keys].flatten().tolist())
 
         networks_weights = [item for sublist in networks_weights for item in sublist]
-        write_data_to_file(equation_number, equation_data.equation_name, networks_weights, train_losses, validation_losses)
+        equation_json[equation_data.equation_name] = networks_weights
+        #write_data_to_file(equation_number, equation_data.equation_name, networks_weights, train_losses, validation_losses)
+    with open(f"{root_dir}/prelim_dataset_ntwrk_wts_to_eqns.json", "w") as outfile:
+        dump(equation_json, outfile, indent=4)
 
 
 if __name__ == "__main__":
-    train_networks_save_weights()
+    train_eq_start = int(sys.argv[-1])
+    print("hello")
+    print(train_eq_start)
+    train_networks_save_weights(train_eq_start)
