@@ -9,5 +9,5 @@ class TransformerDecoderLol(nn.Module):
         self.decoder_layer = nn.TransformerDecoderLayer(d_model, n_heads)
         self.decoder = nn.TransformerDecoder(self.decoder_layer, n_layers)
 
-    def forward(self, target, memory):
-        return self.decoder(target, memory)
+    def forward(self):
+        return self.decoder.forward(tgt=self.target, memory=self.memory)

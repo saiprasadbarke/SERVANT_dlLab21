@@ -14,14 +14,13 @@ class EquationEmbedding:
         for token in token_list:
             embedded_equation.append(self.generate_embedding(token))
         embedded_equation.append(self.generate_embedding("EOS"))
-        return np.array(embedded_equation)
+        return np.asarray(embedded_equation, dtype="float64")
 
     def split(self):
         return [token for token in self.equation]
 
     def generate_embedding(self, token):
         embedding_dict = {
-            "SOS": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
             "0": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             "1": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]),
             "2": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]),
@@ -38,6 +37,7 @@ class EquationEmbedding:
             ".": np.array([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
             "x": np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
             "EOS": np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            "SOS": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
         }
         return embedding_dict[token]
 
