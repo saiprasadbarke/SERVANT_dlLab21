@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 
-class TransformerDecoderLol(nn.Module):
+class TransformerDecoderImpl(nn.Module):
     def __init__(self, memory, target, d_model, n_layers, n_heads):
         self.memory = memory
         self.target = target
