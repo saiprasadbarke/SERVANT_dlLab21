@@ -1,10 +1,10 @@
 import torch.nn as nn
 from mlp_encoder import MLPEncoder
-from transformer_decoder import TransformerDecoderImpl
+from torch.nn import TransformerDecoder, TransformerDecoderLayer
 
 
 class MLPTransformerDecoder(nn.Module):
-    def __init__(self, encoder: MLPEncoder, decoder: TransformerDecoderImpl):
+    def __init__(self, encoder: MLPEncoder, decoder: TransformerDecoder):
         super(MLPTransformerDecoder, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
