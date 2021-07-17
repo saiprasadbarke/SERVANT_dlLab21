@@ -11,10 +11,15 @@ class MLPTransformerDecoder(nn.Module):
         self.log_softmax = nn.LogSoftmax()
 
     def forward(self, src, tgt):
-        return self.log_softmax(self.decode(self.encode(src), tgt))
+        encoded_mem = self.encode(src)
+        decoded_seq = self.decode(tgt, encoded_mem)
+        softmax_output = self.log_softmax(decoded_seq)
+        return softmax_output
 
     def encode(self, src):
-        return self.encoder(src)
+        encoded_mem = self.encoder(src)
+        return encoded_mem
 
     def decode(self, target, memory):
-        return self.decoder(target, memory)
+        decoded_seq = self.decoder(target, memory)
+        return decoded_seq

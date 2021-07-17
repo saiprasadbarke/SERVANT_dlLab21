@@ -11,9 +11,10 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.nn import TransformerDecoderLayer, TransformerDecoder
 import torch.nn as nn
+import torch
 
 
-def create_train_val_test_dataloaders(root_dir):
+def create_train_val_test_dataloaders(root_dir, batch_size):
     parser = ParseEquationsWeights(root_dir)
     embedded_equations, weights = parser.equations_weights_numpy_array()
     (
@@ -42,9 +43,9 @@ def create_train_val_test_dataloaders(root_dir):
     val_dataset = EquationsWeightsDataset(X_val_weights, y_val_embedded_equations)
     test_dataset = EquationsWeightsDataset(X_test_weights, y_test_embedded_equations)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     return train_dataloader, val_dataloader, test_dataloader
 
 
@@ -62,11 +63,11 @@ def create_model():
     decoder_layer_dropout = 0.3
     # Building the model
     encoder = MLPEncoder(
-        input=encoder_input, hidden=encoder_hidden, output=encoder_output
+        input_size=encoder_input, hidden_size=encoder_hidden, output_size=encoder_output
     )
     decoder_layer = TransformerDecoderLayer(
         d_model=encoder_output,
-        n_heads=n_heads_decoder,
+        nhead=n_heads_decoder,
         activation=decoder_layer_activation_function,
         dim_feedforward=decoder_layer_feed_forward_dimension,
         dropout=decoder_layer_dropout,
@@ -80,15 +81,18 @@ def create_model():
 
 
 def train_network():
+    batch_size = 10
+    device = torch.device("cuda")
+    epochs = 1
     (
         train_dataloader,
         val_dataloader,
         test_dataloader,
     ) = create_train_val_test_dataloaders(
-        "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json"
+        "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json",
+        batch_size=batch_size,
     )
-    model = create_model()
-    epochs = 1
+    model = create_model().to(device).double()
     optimizer = optim.Adam(model.parameters(), lr=1e-04)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=20, eta_min=1e-05
@@ -96,7 +100,14 @@ def train_network():
     criterion = nn.CrossEntropyLoss()
 
     mlp_state_dict = train_model(
-        train_dataloader, val_dataloader, epochs, model, optimizer, scheduler, criterion
+        train_dataloader,
+        val_dataloader,
+        epochs,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        device,
     )
 
 
