@@ -14,8 +14,8 @@ class MLPEncoder(nn.Module):
         self.embedding_length = embedding_length
         self.fc1 = nn.Linear(in_features=input_size, out_features=hidden_size)
         self.layer_norm1 = nn.LayerNorm(hidden_size)
-        self.fc2 = nn.Linear(LayerNorm=hidden_size, out_features=hidden_size)
-        self.layer_norm2 = nn.BatchNorm1d(hidden_size)
+        self.fc2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
+        self.layer_norm2 = nn.LayerNorm(hidden_size)
         self.fc3 = nn.Linear(in_features=hidden_size, out_features=hidden_size * 2)
         self.layer_norm3 = nn.LayerNorm(hidden_size * 2)
         self.fc4 = nn.Linear(in_features=hidden_size * 2, out_features=output_size)
@@ -34,6 +34,6 @@ class MLPEncoder(nn.Module):
         output = self.layer_norm3(output)
         output = self.relu(output)
         output = self.fc4(output)
-        output = self.layer_norm1(output)
+        output = self.layer_norm4(output)
         output = reshape(output, (self.sequence_length, -1, self.embedding_length))
         return output
