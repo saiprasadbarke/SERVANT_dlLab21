@@ -24,12 +24,15 @@ def train_model(
         training_loss = 0.0
         # training loop
         for _idx, data in enumerate(train_dataloader):
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
+            source_weights, target_embedded_equation = data
+            source_weights, target_embedded_equation = (
+                source_weights.to(device),
+                target_embedded_equation.to(device).permute(1, 0, 2),
+            )
             optimizer.zero_grad()
             model.train()
-            outputs = model(inputs, labels)
-            loss = criterion(outputs, labels)
+            outputs_memory = model(source_weights, target_embedded_equation)
+            loss = criterion(outputs_memory, target_embedded_equation)
             loss.backward()
             batch_losses.append(loss.item())
             optimizer.step()
@@ -42,11 +45,15 @@ def train_model(
             val_losses = []
             validation_loss = 0.0
             for _idx, data in enumerate(validation_dataloader):
-                inputs, labels = data
-                inputs, labels = inputs.to(device), labels.to(device)
+                source_weights, target_embedded_equation = data
+                source_weights, target_embedded_equation = source_weights.to(
+                    device
+                ), target_embedded_equation.to(device)
                 model.eval()
-                outputs = model(inputs, labels)
-                loss = criterion(outputs.float(), labels.float())
+                outputs_memory = model(source_weights, target_embedded_equation)
+                loss = criterion(
+                    outputs_memory.float(), target_embedded_equation.float()
+                )
                 val_losses.append(loss.item())
             validation_loss = np.mean(val_losses)
             validation_losses.append(validation_loss)

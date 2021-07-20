@@ -3,13 +3,14 @@ from equations_weights_dataset import EquationsWeightsDataset
 from parse_equations_weights import ParseEquationsWeights
 from mlp_encoder import MLPEncoder
 from mlp_transformer_decoder import MLPTransformerDecoder
+from transformer_decoder_teacher_forcing import TransformerDecoderTeacherForcing
 from train_eval_mlp_decoder import train_model, eval_model
 
 # External
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from torch.nn import TransformerDecoderLayer, TransformerDecoder
+from torch.nn import TransformerDecoderLayer
 import torch.nn as nn
 import torch
 
@@ -53,26 +54,31 @@ def create_model():
     # Encoder parameters
     encoder_input = 128
     encoder_hidden = 256
-    encoder_output = 512
+    encoder_output = 360
     # Decoder parameters
-    n_layers_decoder = 20
+    sequence_length = n_layers_decoder = 20
     # Decoder layer parameters
-    n_heads_decoder = 8
+    n_heads_decoder = 6
     decoder_layer_activation_function = "relu"
-    decoder_layer_feed_forward_dimension = 1024
+    decoder_layer_feed_forward_dimension = 128
     decoder_layer_dropout = 0.3
+    embedding_dimension = 18
     # Building the model
     encoder = MLPEncoder(
-        input_size=encoder_input, hidden_size=encoder_hidden, output_size=encoder_output
+        input_size=encoder_input,
+        hidden_size=encoder_hidden,
+        output_size=encoder_output,
+        sequence_length=sequence_length,
+        embedding_length=embedding_dimension,
     )
     decoder_layer = TransformerDecoderLayer(
-        d_model=encoder_output,
+        d_model=embedding_dimension,
         nhead=n_heads_decoder,
         activation=decoder_layer_activation_function,
         dim_feedforward=decoder_layer_feed_forward_dimension,
         dropout=decoder_layer_dropout,
     )
-    decoder = TransformerDecoder(
+    decoder = TransformerDecoderTeacherForcing(
         decoder_layer=decoder_layer, num_layers=n_layers_decoder
     )
 
