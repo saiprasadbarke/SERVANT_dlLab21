@@ -32,9 +32,11 @@ class TransformerDecoderTeacherForcing(nn.Module):
                 outputs.append(output)
             return cat(outputs)
         else:
-            output = tgt[0]
+            output = tgt[0].unsqueeze(0)
             for mod in self.layers:
-                output = mod(output.unsqueeze(0), memory)
+                print(output.shape)
+                print(output)
+                output = mod(output, memory)
                 outputs.append(output)
             return cat(outputs)
 

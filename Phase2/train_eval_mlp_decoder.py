@@ -25,14 +25,18 @@ def train_model(
         # training loop
         for _idx, data in enumerate(train_dataloader):
             source_weights, target_embedded_equation = data
-            source_weights, target_embedded_equation = (
+            source_weights, target_embedded_equation_permuted = (
                 source_weights.to(device),
                 target_embedded_equation.to(device).permute(1, 0, 2),
             )
             optimizer.zero_grad()
             model.train()
-            outputs_memory = model(source_weights, target_embedded_equation)
-            loss = criterion(outputs_memory, target_embedded_equation)
+            ml_transformerdecoder_outputs = model(
+                source_weights, target_embedded_equation_permuted
+            )
+            loss = criterion(
+                ml_transformerdecoder_outputs.permute(1, 2, 0), target_embedded_equation
+            )
             loss.backward()
             batch_losses.append(loss.item())
             optimizer.step()
@@ -50,9 +54,12 @@ def train_model(
                     device
                 ), target_embedded_equation.to(device)
                 model.eval()
-                outputs_memory = model(source_weights, target_embedded_equation)
+                ml_transformerdecoder_outputs = model(
+                    source_weights, target_embedded_equation
+                )
                 loss = criterion(
-                    outputs_memory.float(), target_embedded_equation.float()
+                    ml_transformerdecoder_outputs.float(),
+                    target_embedded_equation.float(),
                 )
                 val_losses.append(loss.item())
             validation_loss = np.mean(val_losses)
