@@ -1,5 +1,4 @@
-from parse_equations_weights import ParseEquationsWeights
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 
 class EquationsWeightsDataset(Dataset):
@@ -18,12 +17,3 @@ class EquationsWeightsDataset(Dataset):
         x_value = self.X_weights[idx]
         y_value = self.y_equations[idx]
         return x_value, y_value
-
-
-if __name__ == "__main__":
-
-    root_dir = "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json"
-    equation_weight_dataset = EquationsWeightsDataset(root_dir)
-    data_loader = DataLoader(equation_weight_dataset, batch_size=1, shuffle=True)
-    for idx, xy_values in enumerate(data_loader):
-        print(f"XY at position {idx} is {xy_values}")

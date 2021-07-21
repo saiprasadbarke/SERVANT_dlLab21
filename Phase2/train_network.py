@@ -1,23 +1,23 @@
 # Local
 from equations_weights_dataset import EquationsWeightsDataset
-from parse_equations_weights import ParseEquationsWeights
+from parse_weights_equations import ParseWeightsAndEquationsJson
 from mlp_encoder import MLPEncoder
-from mlp_transformer_decoder import MLPTransformerDecoder
-from transformer_decoder_teacher_forcing import TransformerDecoderTeacherForcing
+from symbolic_regression_transformer import SymbolicRegressionTransformer
 from train_eval_mlp_decoder import train_model, eval_model
+from data_helpers import collate_fn
 
 # External
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from torch.nn import TransformerDecoderLayer
+from torch.nn import TransformerDecoderLayer, TransformerDecoder
 import torch.nn as nn
 import torch
 
 
 def create_train_val_test_dataloaders(root_dir, batch_size):
-    parser = ParseEquationsWeights(root_dir)
-    embedded_equations, weights = parser.equations_weights_numpy_array()
+    data = ParseWeightsAndEquationsJson(root_dir)
+    embedded_equations, weights = data.tokenized_equations, data.weights
     (
         X_train_val_weights,
         X_test_weights,
@@ -44,9 +44,15 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     val_dataset = EquationsWeightsDataset(X_val_weights, y_val_embedded_equations)
     test_dataset = EquationsWeightsDataset(X_test_weights, y_test_embedded_equations)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=batch_size, collate_fn=collate_fn
+    )
+    val_dataloader = DataLoader(
+        val_dataset, batch_size=batch_size, collate_fn=collate_fn
+    )
+    test_dataloader = DataLoader(
+        test_dataset, batch_size=batch_size, collate_fn=collate_fn
+    )
     return train_dataloader, val_dataloader, test_dataloader
 
 
@@ -54,22 +60,20 @@ def create_model():
     # Encoder parameters
     encoder_input = 128
     encoder_hidden = 256
-    encoder_output = 360
+    encoder_output = embedding_dimension = 512
     # Decoder parameters
-    sequence_length = n_layers_decoder = 20
+    max_sequence_length = 20
+    n_layers_decoder = 3
     # Decoder layer parameters
     n_heads_decoder = 6
     decoder_layer_activation_function = "relu"
-    decoder_layer_feed_forward_dimension = 128
+    decoder_layer_feed_forward_dimension = 512
     decoder_layer_dropout = 0.3
-    embedding_dimension = 18
     # Building the model
     encoder = MLPEncoder(
         input_size=encoder_input,
         hidden_size=encoder_hidden,
         output_size=encoder_output,
-        sequence_length=sequence_length,
-        embedding_length=embedding_dimension,
     )
     decoder_layer = TransformerDecoderLayer(
         d_model=embedding_dimension,
@@ -78,11 +82,14 @@ def create_model():
         dim_feedforward=decoder_layer_feed_forward_dimension,
         dropout=decoder_layer_dropout,
     )
-    decoder = TransformerDecoderTeacherForcing(
+    decoder = TransformerDecoder(
         decoder_layer=decoder_layer, num_layers=n_layers_decoder
     )
-
-    mlp_transformer_decoder = MLPTransformerDecoder(encoder=encoder, decoder=decoder)
+    # TODO: add generator, target embedding layer, target positional encoding layer
+    # TODO: compute target mask and target padding mask
+    mlp_transformer_decoder = SymbolicRegressionTransformer(
+        encoder=encoder, decoder=decoder
+    )
     return mlp_transformer_decoder
 
 
@@ -101,7 +108,7 @@ def train_network():
     model = create_model().to(device).double()
     optimizer = optim.Adam(model.parameters(), lr=1e-04)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=20, eta_min=1e-05
+        optimizer, T_0=20, eta_min=1e-04
     )
     criterion = nn.CrossEntropyLoss()
 

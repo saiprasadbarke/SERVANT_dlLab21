@@ -4,14 +4,15 @@ from torch import reshape
 
 class MLPEncoder(nn.Module):
     def __init__(
-        self, input_size, output_size, hidden_size, sequence_length, embedding_length
+        self,
+        input_size,
+        hidden_size,
+        output_size,
     ):
         # call constructor from superclass
         super(MLPEncoder, self).__init__()
         # define network layers
         self.input_size = input_size
-        self.sequence_length = sequence_length
-        self.embedding_length = embedding_length
         self.fc1 = nn.Linear(in_features=input_size, out_features=hidden_size)
         self.layer_norm1 = nn.LayerNorm(hidden_size)
         self.fc2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
@@ -35,5 +36,4 @@ class MLPEncoder(nn.Module):
         output = self.relu(output)
         output = self.fc4(output)
         output = self.layer_norm4(output)
-        output = reshape(output, (self.sequence_length, -1, self.embedding_length))
         return output
