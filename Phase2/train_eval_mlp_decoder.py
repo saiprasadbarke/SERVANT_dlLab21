@@ -2,14 +2,14 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from mlp_transformer_decoder import MLPTransformerDecoder
+from symbolic_regression_transformer import SymbolicRegressionTransformer
 
 
 def train_model(
     train_dataloader: DataLoader,
     validation_dataloader: DataLoader,
     epochs,
-    model: MLPTransformerDecoder,
+    model: SymbolicRegressionTransformer,
     optimizer,
     scheduler,
     criterion,
@@ -17,7 +17,7 @@ def train_model(
 ):
     train_losses = []
     validation_losses = []
-
+    # TODO: compute target mask and target padding mask
     # train-validation loop
     for epoch in range(epochs):
         batch_losses = []
