@@ -32,7 +32,7 @@ class SymbolicRegressionTransformer(nn.Module):
         encoded_mem = self.encoder(src)
         return encoded_mem
 
-    def decode(self, memory, tgt, tgt_mask, tgt_padding_mask):
+    def decode(self, memory, tgt, tgt_mask=None, tgt_padding_mask=None):
         target_embedded = self.target_positional_embedding(
             self.target_token_embedding(tgt)
         )

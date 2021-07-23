@@ -8,7 +8,8 @@ from token_embedding import TokenEmbedding
 from positional_encoding import PositionalEncoding
 from train_eval_mlp_decoder import train_model
 from data_helpers import collate_fn
-from settings import DEVICE, PAD_IDX, root_dir
+from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
+from inference import translate
 
 # External
 from sklearn.model_selection import train_test_split
@@ -30,7 +31,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         weights,
         embedded_equations,
-        test_size=0.1,
+        test_size=0.0001,
         random_state=42,
     )
     (
@@ -41,7 +42,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         X_train_val_weights,
         y_train_val_embedded_equations,
-        test_size=0.3,
+        test_size=0.15,
         random_state=42,
     )
     train_dataset = EquationsWeightsDataset(X_train_weights, y_train_embedded_equations)
@@ -137,7 +138,7 @@ def train_network():
         val_dataloader,
         test_dataloader,
     ) = create_train_val_test_dataloaders(
-        root_dir=root_dir,
+        root_dir=root_dir_test,
         batch_size=batch_size,
     )
     model = create_model()
@@ -148,7 +149,7 @@ def train_network():
     )
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
-    mlp_state_dict, training_loss, validation_loss = train_model(
+    model, training_loss, validation_loss = train_model(
         train_dataloader,
         val_dataloader,
         epochs,
@@ -159,9 +160,12 @@ def train_network():
         DEVICE,
     )
 
-    return mlp_state_dict, training_loss, validation_loss
+    return model, training_loss, validation_loss, test_dataloader
 
 
 if __name__ == "__main__":
 
-    train_network()
+    model, training_loss, validation_loss, test_dataloader = train_network()
+    torch.save(model.state_dict(), "./models/saved_model.pth")
+    weights_list = next(iter(test_dataloader))[0][0, :].tolist()
+    print(translate(model, weights_list))

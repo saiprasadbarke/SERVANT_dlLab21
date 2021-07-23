@@ -130,6 +130,6 @@ dmypy.json
 
 datasets
 network_wts_eqs_dataset
-
+models
 .venv*
 project-venv

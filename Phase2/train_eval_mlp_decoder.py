@@ -106,4 +106,4 @@ def train_model(
 
         # print(f"\t Label value: {labels.float().item()}\t Predicted Output: {outputs.float().item()}")
     # torch.save(model.state_dict(), MODEL_PATH)
-    return model.state_dict(), train_losses, validation_losses
+    return model, train_losses, validation_losses
