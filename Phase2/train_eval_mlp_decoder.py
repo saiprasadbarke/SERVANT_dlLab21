@@ -18,8 +18,12 @@ def train_model(
 ):
     train_losses = []
     validation_losses = []
+    best_val_loss = np.inf
+    epochs_no_improve = 0
+    n_epochs_stop = 5
     # train-validation loop
     for epoch in range(epochs):
+        print(f"Epoch {epoch}")
         batch_losses = []
         training_loss = 0.0
         # training loop
@@ -87,11 +91,19 @@ def train_model(
                 )
                 val_losses.append(loss.item())
             validation_loss = np.mean(val_losses)
-            validation_losses.append(validation_loss)
+            if validation_loss < best_val_loss:
+                validation_losses.append(validation_loss)
+                print(
+                    f"[{epoch}] Training loss: {training_loss:.7f}\t Validation loss: {validation_loss:.7f}"
+                )
+                best_val_loss = validation_loss
+            else:
+                epochs_no_improve += 1
+                # Check early stopping condition
+                if epochs_no_improve == n_epochs_stop:
+                    print(f"Early stopping on epoch number {epoch}!")
+                    break
 
-        print(
-            f"[{epoch+1}] Training loss: {training_loss:.7f}\t Validation loss: {validation_loss:.7f}"
-        )
         # print(f"\t Label value: {labels.float().item()}\t Predicted Output: {outputs.float().item()}")
     # torch.save(model.state_dict(), MODEL_PATH)
     return model.state_dict(), train_losses, validation_losses

@@ -6,9 +6,9 @@ from symbolic_regression_transformer import SymbolicRegressionTransformer
 from generator import Generator
 from token_embedding import TokenEmbedding
 from positional_encoding import PositionalEncoding
-from train_eval_mlp_decoder import train_model, eval_model
+from train_eval_mlp_decoder import train_model
 from data_helpers import collate_fn
-from settings import DEVICE, PAD_IDX
+from settings import DEVICE, PAD_IDX, root_dir
 
 # External
 from sklearn.model_selection import train_test_split
@@ -30,7 +30,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         weights,
         embedded_equations,
-        test_size=0.2,
+        test_size=0.1,
         random_state=42,
     )
     (
@@ -41,12 +41,16 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         X_train_val_weights,
         y_train_val_embedded_equations,
-        test_size=0.25,
+        test_size=0.3,
         random_state=42,
     )
     train_dataset = EquationsWeightsDataset(X_train_weights, y_train_embedded_equations)
     val_dataset = EquationsWeightsDataset(X_val_weights, y_val_embedded_equations)
     test_dataset = EquationsWeightsDataset(X_test_weights, y_test_embedded_equations)
+
+    print(f"Size of Training dataset: {train_dataset.__len__()}")
+    print(f"Size of Validation dataset: {val_dataset.__len__()}")
+    print(f"Size of Test dataset: {test_dataset.__len__()}")
 
     train_dataloader = DataLoader(
         train_dataset, batch_size=batch_size, collate_fn=collate_fn
@@ -126,25 +130,25 @@ def create_model():
 
 
 def train_network():
-    batch_size = 64
-    epochs = 1
+    batch_size = 16
+    epochs = 100
     (
         train_dataloader,
         val_dataloader,
         test_dataloader,
     ) = create_train_val_test_dataloaders(
-        "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json",
+        root_dir=root_dir,
         batch_size=batch_size,
     )
     model = create_model()
 
-    optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = optim.Adam(model.parameters(), lr=1e-04)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=20, eta_min=1e-04
+        optimizer, T_0=1, eta_min=1e-06
     )
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
-    mlp_state_dict = train_model(
+    mlp_state_dict, training_loss, validation_loss = train_model(
         train_dataloader,
         val_dataloader,
         epochs,
@@ -154,6 +158,8 @@ def train_network():
         criterion,
         DEVICE,
     )
+
+    return mlp_state_dict, training_loss, validation_loss
 
 
 if __name__ == "__main__":

@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 datasets
+network_wts_eqs_dataset
 
 .venv*
 project-venv

@@ -5,3 +5,4 @@ special_symbols = ["<unk>", "<pad>", "<bos>", "<eos>"]
 import torch
 
 DEVICE = torch.device("cuda")
+root_dir = "./network_wts_eqs_dataset/equations_to_mlp_weights.json"
