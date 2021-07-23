@@ -119,7 +119,10 @@ def create_model():
         target_positional_embedding=target_positional_embedding,
         generator=generator,
     )
-    return mlp_transformer_decoder
+    for p in mlp_transformer_decoder.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+    return mlp_transformer_decoder.to(DEVICE)
 
 
 def train_network():
@@ -133,7 +136,8 @@ def train_network():
         "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json",
         batch_size=batch_size,
     )
-    model = create_model().to(DEVICE)
+    model = create_model()
+
     optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=20, eta_min=1e-04

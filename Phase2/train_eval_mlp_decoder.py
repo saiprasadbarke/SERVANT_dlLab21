@@ -18,7 +18,6 @@ def train_model(
 ):
     train_losses = []
     validation_losses = []
-    # TODO: compute target mask and target padding mask
     # train-validation loop
     for epoch in range(epochs):
         batch_losses = []
@@ -61,16 +60,30 @@ def train_model(
             validation_loss = 0.0
             for _idx, data in enumerate(validation_dataloader):
                 source_weights, target_embedded_equation = data
-                source_weights, target_embedded_equation = source_weights.to(
-                    device
-                ), target_embedded_equation.to(device)
+                source_weights, target_embedded_equation = (
+                    source_weights.to(device),
+                    target_embedded_equation.to(device),
+                )
+                target_embedded_equation_input = target_embedded_equation[:-1, :]
+                tgt_mask, tgt_padding_mask = create_mask(target_embedded_equation_input)
                 model.eval()
                 mlp_transformerdecoder_logits = model(
-                    source_weights, target_embedded_equation
+                    source_weights,
+                    target_embedded_equation_input,
+                    tgt_mask,
+                    tgt_padding_mask,
+                )
+                target_embedded_equation_out = target_embedded_equation[1:, :].reshape(
+                    -1
+                )
+                mlp_transformerdecoder_logits_out = (
+                    mlp_transformerdecoder_logits.reshape(
+                        -1, mlp_transformerdecoder_logits.shape[-1]
+                    )
                 )
                 loss = criterion(
-                    mlp_transformerdecoder_logits.float(),
-                    target_embedded_equation.float(),
+                    mlp_transformerdecoder_logits_out,
+                    target_embedded_equation_out,
                 )
                 val_losses.append(loss.item())
             validation_loss = np.mean(val_losses)
@@ -82,24 +95,3 @@ def train_model(
         # print(f"\t Label value: {labels.float().item()}\t Predicted Output: {outputs.float().item()}")
     # torch.save(model.state_dict(), MODEL_PATH)
     return model.state_dict(), train_losses, validation_losses
-
-
-def eval_model(
-    test_dataloader: DataLoader,
-    model: SymbolicRegressionTransformer,
-    criterion,
-):
-    test_losses = []
-    with torch.no_grad():
-        for _idx, data in enumerate(test_dataloader):
-            inputs, labels = data
-            model.eval()
-            outputs = model(inputs)
-            # print("outputs, ", outputs.shape)
-            # rescaled_outputs = inverse_scaler(outputs, method="minmax")
-            # print("rescaled_outputs: ",rescaled_outputs.shape)
-            loss = criterion(outputs, labels)
-            test_losses.append(loss.item())
-        test_loss = np.mean(test_losses)
-        print(f"Final test loss: {test_loss:.4f}")
-    return test_losses
