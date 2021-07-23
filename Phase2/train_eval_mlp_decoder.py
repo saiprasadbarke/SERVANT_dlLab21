@@ -20,7 +20,7 @@ def train_model(
     validation_losses = []
     best_val_loss = np.inf
     epochs_no_improve = 0
-    n_epochs_stop = 5
+    n_epochs_stop = 10
     # train-validation loop
     for epoch in range(epochs):
         print(f"Epoch {epoch}")
@@ -91,12 +91,13 @@ def train_model(
                 )
                 val_losses.append(loss.item())
             validation_loss = np.mean(val_losses)
+            validation_losses.append(validation_loss)
+            print(
+                f"[{epoch}] Training loss: {training_loss:.7f}\t Validation loss: {validation_loss:.7f}"
+            )
             if validation_loss < best_val_loss:
-                validation_losses.append(validation_loss)
-                print(
-                    f"[{epoch}] Training loss: {training_loss:.7f}\t Validation loss: {validation_loss:.7f}"
-                )
                 best_val_loss = validation_loss
+                epochs_no_improve = 0
             else:
                 epochs_no_improve += 1
                 # Check early stopping condition

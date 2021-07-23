@@ -15,7 +15,7 @@ def greedy_decode(model, src, start_symbol, max_len=20):
         tgt_mask = (generate_square_subsequent_mask(ys.size(0)).type(torch.bool)).to(
             DEVICE
         )
-        out = model.decode(memory, ys)
+        out = model.decode(memory, ys, tgt_mask)
         out = out.transpose(0, 1)
         prob = model.generator(out[:, -1])
         _, next_word = torch.max(prob, dim=1)

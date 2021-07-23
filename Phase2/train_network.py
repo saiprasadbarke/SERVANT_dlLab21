@@ -10,6 +10,7 @@ from train_eval_mlp_decoder import train_model
 from data_helpers import collate_fn
 from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
 from inference import translate
+from vocab_transform import VOCAB_TRANSFORM
 
 # External
 from sklearn.model_selection import train_test_split
@@ -31,7 +32,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         weights,
         embedded_equations,
-        test_size=0.0001,
+        test_size=0.1,
         random_state=42,
     )
     (
@@ -73,12 +74,12 @@ def create_model():
     encoder_output = embedding_size = 512
 
     # Decoder parameters
-    n_layers_decoder = 3
+    n_layers_decoder = 6
 
     # Decoder layer parameters
     n_heads_decoder = 8
     decoder_layer_activation_function = "relu"
-    decoder_layer_feed_forward_dimension = 512
+    decoder_layer_feed_forward_dimension = 2048
     decoder_layer_dropout = 0.1
 
     # Other parameters
@@ -131,19 +132,19 @@ def create_model():
 
 
 def train_network():
-    batch_size = 16
+    batch_size = 4
     epochs = 100
     (
         train_dataloader,
         val_dataloader,
         test_dataloader,
     ) = create_train_val_test_dataloaders(
-        root_dir=root_dir_test,
+        root_dir=root_dir,
         batch_size=batch_size,
     )
     model = create_model()
 
-    optimizer = optim.Adam(model.parameters(), lr=1e-04)
+    optimizer = optim.Adam(model.parameters(), lr=1e-05)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=1, eta_min=1e-06
     )
@@ -167,5 +168,18 @@ if __name__ == "__main__":
 
     model, training_loss, validation_loss, test_dataloader = train_network()
     torch.save(model.state_dict(), "./models/saved_model.pth")
-    weights_list = next(iter(test_dataloader))[0][0, :].tolist()
-    print(translate(model, weights_list))
+    weights_list, equation_tokens = next(iter(test_dataloader))
+    equation_tokens = torch.transpose(equation_tokens, 0, 1)
+    weights_list, equation_tokens = (
+        weights_list[0, :].tolist(),
+        equation_tokens[0, :].tolist(),
+    )
+
+    equation = (
+        "".join(VOCAB_TRANSFORM.lookup_tokens(equation_tokens))
+        .replace("<bos>", "")
+        .replace("<eos>", "")
+        .replace("<pad>", "")
+    )
+    print(f"Ground Truth: {equation}")
+    print(f"Predicted equation : {translate(model, weights_list)}")
