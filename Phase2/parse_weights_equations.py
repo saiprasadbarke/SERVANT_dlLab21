@@ -1,5 +1,6 @@
 from json import load
-from data_helpers import get_equations_vocab_transform
+from torchtext.vocab import Vocab, build_vocab_from_iterator
+from settings import special_symbols, UNK_IDX
 
 
 class ParseWeightsAndEquationsJson:
@@ -18,6 +19,16 @@ class ParseWeightsAndEquationsJson:
         ]
         return weights, tokenized_equations
 
+    def get_equations_vocab_transform(self) -> Vocab:
+        vocab_transform = build_vocab_from_iterator(
+            self.tokenized_equations,
+            min_freq=1,
+            specials=special_symbols,
+            special_first=True,
+        )
+        vocab_transform.set_default_index(UNK_IDX)
+        return vocab_transform
+
     @staticmethod
     def tokenize_equation(equation):
         "Tokenizes an equation and returns a list"
@@ -28,7 +39,7 @@ class ParseWeightsAndEquationsJson:
 if __name__ == "__main__":
     root_dir = "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json"
     data = ParseWeightsAndEquationsJson(root_dir)
-    vocab_transform = get_equations_vocab_transform(data.tokenized_equations)
+    vocab_transform = data.get_equations_vocab_transform()
     print(f"Vocab_dict string to index: {vocab_transform.get_stoi()}")
     print(f"Vocab_dict index to string: {vocab_transform.get_itos()}")
     print(f"Length of vocab: {vocab_transform.__len__()}")

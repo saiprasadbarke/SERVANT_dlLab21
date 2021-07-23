@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from symbolic_regression_transformer import SymbolicRegressionTransformer
+from masking import create_mask
 
 
 def train_model(
@@ -25,17 +26,27 @@ def train_model(
         # training loop
         for _idx, data in enumerate(train_dataloader):
             source_weights, target_embedded_equation = data
-            source_weights, target_embedded_equation_permuted = (
+            source_weights, target_embedded_equation = (
                 source_weights.to(device),
-                target_embedded_equation.to(device).permute(1, 0, 2),
+                target_embedded_equation.to(device),
             )
+            target_embedded_equation_input = target_embedded_equation[:-1, :]
+            tgt_mask, tgt_padding_mask = create_mask(target_embedded_equation_input)
             optimizer.zero_grad()
             model.train()
-            ml_transformerdecoder_outputs = model(
-                source_weights, target_embedded_equation_permuted
+            mlp_transformerdecoder_logits = model(
+                source_weights,
+                target_embedded_equation_input,
+                tgt_mask,
+                tgt_padding_mask,
+            )
+            target_embedded_equation_out = target_embedded_equation[1:, :].reshape(-1)
+            mlp_transformerdecoder_logits_out = mlp_transformerdecoder_logits.reshape(
+                -1, mlp_transformerdecoder_logits.shape[-1]
             )
             loss = criterion(
-                ml_transformerdecoder_outputs.permute(1, 2, 0), target_embedded_equation
+                mlp_transformerdecoder_logits_out,
+                target_embedded_equation_out,
             )
             loss.backward()
             batch_losses.append(loss.item())
@@ -54,11 +65,11 @@ def train_model(
                     device
                 ), target_embedded_equation.to(device)
                 model.eval()
-                ml_transformerdecoder_outputs = model(
+                mlp_transformerdecoder_logits = model(
                     source_weights, target_embedded_equation
                 )
                 loss = criterion(
-                    ml_transformerdecoder_outputs.float(),
+                    mlp_transformerdecoder_logits.float(),
                     target_embedded_equation.float(),
                 )
                 val_losses.append(loss.item())
@@ -75,7 +86,7 @@ def train_model(
 
 def eval_model(
     test_dataloader: DataLoader,
-    model: MLPTransformerDecoder,
+    model: SymbolicRegressionTransformer,
     criterion,
 ):
     test_losses = []

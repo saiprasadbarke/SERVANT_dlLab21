@@ -22,20 +22,24 @@ class SymbolicRegressionTransformer(nn.Module):
         self.target_positional_embedding = target_positional_embedding
         self.generator = generator
 
-    def forward(self, src, tgt, tgt_mask):
+    def forward(self, src, tgt, tgt_mask, tgt_padding_mask):
         encoded_mem = self.encode(src)
-        decoded_seq = self.decode(encoded_mem, tgt, tgt_mask)
-        return decoded_seq
+        decoded_seq = self.decode(encoded_mem, tgt, tgt_mask, tgt_padding_mask)
+        logits = self.generator(decoded_seq)
+        return logits
 
     def encode(self, src):
         encoded_mem = self.encoder(src)
         return encoded_mem
 
-    def decode(self, memory, tgt, tgt_mask):
-        target_embedded = self.tgt_embed(tgt)
+    def decode(self, memory, tgt, tgt_mask, tgt_padding_mask):
+        target_embedded = self.target_positional_embedding(
+            self.target_token_embedding(tgt)
+        )
         decoded_seq = self.decoder(
             tgt=target_embedded,
             memory=memory,
             tgt_mask=tgt_mask,
+            tgt_key_padding_mask=tgt_padding_mask,
         )
         return decoded_seq

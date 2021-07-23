@@ -36,4 +36,5 @@ class MLPEncoder(nn.Module):
         output = self.relu(output)
         output = self.fc4(output)
         output = self.layer_norm4(output)
+        output = reshape(output, (-1, output.shape[0], output.shape[1]))
         return output

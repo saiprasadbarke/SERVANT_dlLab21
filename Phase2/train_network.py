@@ -133,7 +133,7 @@ def train_network():
         "./network_wts_eqs_dataset/ntwrk_wts_eqs_1000.json",
         batch_size=batch_size,
     )
-    model = create_model().to(DEVICE).double()
+    model = create_model().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=20, eta_min=1e-04
