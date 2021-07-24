@@ -28,7 +28,7 @@ def greedy_decode(model, src, start_symbol, max_len=20):
 
 
 # actual function to translate input sentence into target language
-def translate(model: torch.nn.Module, src_list: List):
+def generate_equation(model: torch.nn.Module, src_list: List):
     model.eval()
     src = torch.tensor(src_list).view(1, -1)
     tgt_tokens = greedy_decode(model, src, start_symbol=BOS_IDX).flatten()

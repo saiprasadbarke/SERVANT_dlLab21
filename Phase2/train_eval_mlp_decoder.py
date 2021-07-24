@@ -8,8 +8,6 @@ from masking import create_mask
 
 def train_model(
     train_dataloader: DataLoader,
-    validation_dataloader: DataLoader,
-    epochs,
     model: SymbolicRegressionTransformer,
     optimizer,
     scheduler,
@@ -108,3 +106,43 @@ def train_model(
         # print(f"\t Label value: {labels.float().item()}\t Predicted Output: {outputs.float().item()}")
     # torch.save(model.state_dict(), MODEL_PATH)
     return model, train_losses, validation_losses
+
+
+def eval_model(
+    validation_dataloader: DataLoader,
+    epoch,
+    model: SymbolicRegressionTransformer,
+    optimizer,
+    scheduler,
+    criterion,
+    device,
+):
+    with torch.no_grad():
+        val_losses = []
+        validation_loss = 0.0
+        for _idx, data in enumerate(validation_dataloader):
+            source_weights, target_embedded_equation = data
+            source_weights, target_embedded_equation = (
+                source_weights.to(device),
+                target_embedded_equation.to(device),
+            )
+            target_embedded_equation_input = target_embedded_equation[:-1, :]
+            tgt_mask, tgt_padding_mask = create_mask(target_embedded_equation_input)
+            model.eval()
+            mlp_transformerdecoder_logits = model(
+                source_weights,
+                target_embedded_equation_input,
+                tgt_mask,
+                tgt_padding_mask,
+            )
+            target_embedded_equation_out = target_embedded_equation[1:, :].reshape(-1)
+            mlp_transformerdecoder_logits_out = mlp_transformerdecoder_logits.reshape(
+                -1, mlp_transformerdecoder_logits.shape[-1]
+            )
+            loss = criterion(
+                mlp_transformerdecoder_logits_out,
+                target_embedded_equation_out,
+            )
+            val_losses.append(loss.item())
+        validation_loss = np.mean(val_losses)
+        return validation_loss

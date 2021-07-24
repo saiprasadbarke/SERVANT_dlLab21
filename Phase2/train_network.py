@@ -6,11 +6,11 @@ from symbolic_regression_transformer import SymbolicRegressionTransformer
 from generator import Generator
 from token_embedding import TokenEmbedding
 from positional_encoding import PositionalEncoding
-from train_eval_mlp_decoder import train_model
+from train_eval import train_model, eval_model
 from data_helpers import collate_fn
 from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
-from inference import translate
 from vocab_transform import VOCAB_TRANSFORM
+from test_model import test_model
 
 # External
 from sklearn.model_selection import train_test_split
@@ -19,6 +19,8 @@ import torch.optim as optim
 from torch.nn import TransformerDecoderLayer, TransformerDecoder
 import torch.nn as nn
 import torch
+from timeit import default_timer as timer
+from numpy import inf
 
 
 def create_train_val_test_dataloaders(root_dir, batch_size):
@@ -55,10 +57,10 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     print(f"Size of Test dataset: {test_dataset.__len__()}")
 
     train_dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, collate_fn=collate_fn
+        train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True
     )
     val_dataloader = DataLoader(
-        val_dataset, batch_size=batch_size, collate_fn=collate_fn
+        val_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True
     )
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, collate_fn=collate_fn
@@ -131,55 +133,64 @@ def create_model():
     return mlp_transformer_decoder.to(DEVICE)
 
 
-def train_network():
-    batch_size = 4
-    epochs = 100
+def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id: str):
+    # Return all dataloaders
     (
         train_dataloader,
         val_dataloader,
         test_dataloader,
     ) = create_train_val_test_dataloaders(
-        root_dir=root_dir,
+        root_dir=root_dir_dataset,
         batch_size=batch_size,
     )
+    # Create model
     model = create_model()
-
     optimizer = optim.Adam(model.parameters(), lr=1e-05)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=1, eta_min=1e-06
     )
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
+    # Early stopping criteria
+    best_val_loss = inf
+    epochs_no_improve = 0
+    n_epochs_stop = 5
+    training_losses = []
+    validation_losses = []
 
-    model, training_loss, validation_loss = train_model(
-        train_dataloader,
-        val_dataloader,
-        epochs,
-        model,
-        optimizer,
-        scheduler,
-        criterion,
-        DEVICE,
-    )
+    # Train the model
+    print("Training started...")
+    for epoch in range(1, n_epochs + 1):
+        start_time = timer()
+        training_loss = train_model(
+            train_dataloader, model, optimizer, scheduler, criterion, DEVICE
+        )
+        end_time = timer()
+        validation_loss = eval_model(val_dataloader, model, criterion, DEVICE)
+        print(
+            (
+                f"Epoch: {epoch}, Train loss: {training_loss:.3f}, Val loss: {validation_loss:.3f}, "
+                f"Epoch time = {(end_time - start_time):.3f}s"
+            )
+        )
+        if validation_loss < best_val_loss:
+            torch.save(model.state_dict(), f"./models/{run_id}_model.pth")
+            best_val_loss = validation_loss
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            # Check early stopping condition
+            if epochs_no_improve == n_epochs_stop:
+                print(f"Early stopping on epoch number {epoch}!")
+                break
+        training_losses.append(training_loss)
+        validation_losses.append(validation_loss)
 
-    return model, training_loss, validation_loss, test_dataloader
+    return model, training_losses, validation_losses, test_dataloader
 
 
 if __name__ == "__main__":
 
-    model, training_loss, validation_loss, test_dataloader = train_network()
-    torch.save(model.state_dict(), "./models/saved_model.pth")
-    weights_list, equation_tokens = next(iter(test_dataloader))
-    equation_tokens = torch.transpose(equation_tokens, 0, 1)
-    weights_list, equation_tokens = (
-        weights_list[0, :].tolist(),
-        equation_tokens[0, :].tolist(),
+    model, training_losses, validation_losses, test_dataloader = train_network(
+        batch_size=4, n_epochs=50, root_dir_dataset=root_dir_test, run_id="testrun_2"
     )
-
-    equation = (
-        "".join(VOCAB_TRANSFORM.lookup_tokens(equation_tokens))
-        .replace("<bos>", "")
-        .replace("<eos>", "")
-        .replace("<pad>", "")
-    )
-    print(f"Ground Truth: {equation}")
-    print(f"Predicted equation : {translate(model, weights_list)}")
+    test_model(test_dataloader, model)
