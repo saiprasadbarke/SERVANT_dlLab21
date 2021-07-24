@@ -1,4 +1,5 @@
 # Local
+from torch.functional import norm
 from equations_weights_dataset import EquationsWeightsDataset
 from parse_weights_equations import ParseWeightsAndEquationsJson
 from mlp_encoder import MLPEncoder
@@ -16,7 +17,7 @@ from test_model import test_model
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from torch.nn import TransformerDecoderLayer, TransformerDecoder
+from torch.nn import TransformerDecoderLayer, TransformerDecoder, LayerNorm
 import torch.nn as nn
 import torch
 from timeit import default_timer as timer
@@ -80,8 +81,8 @@ def create_model():
 
     # Decoder layer parameters
     n_heads_decoder = 8
-    decoder_layer_activation_function = "relu"
-    decoder_layer_feed_forward_dimension = 2048
+    decoder_layer_activation_function = "gelu"
+    decoder_layer_feed_forward_dimension = 512
     decoder_layer_dropout = 0.1
 
     # Other parameters
@@ -101,9 +102,11 @@ def create_model():
         dim_feedforward=decoder_layer_feed_forward_dimension,
         dropout=decoder_layer_dropout,
     )
+    decoder_layer_norm = LayerNorm(normalized_shape=embedding_size)
     decoder = TransformerDecoder(
         decoder_layer=decoder_layer,
         num_layers=n_layers_decoder,
+        norm=decoder_layer_norm,
     )
 
     generator = Generator(

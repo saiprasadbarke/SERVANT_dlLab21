@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 
 def test_model(test_dataloader: DataLoader, model: SymbolicRegressionTransformer):
-    for weights_list, equation_tokens in enumerate(test_dataloader):
+    for weights_list, equation_tokens in test_dataloader:
         equation_tokens = transpose(equation_tokens, 0, 1)
         weights_list, equation_tokens = (
             weights_list.tolist(),
