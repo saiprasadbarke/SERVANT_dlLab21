@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from masking import create_mask
 from settings import PAD_IDX, BOS_IDX, EOS_IDX, DEVICE
 
-
+# Implementation from https://github.com/jadore801120/attention-is-all-you-need-pytorch
 class Translator(nn.Module):
     """Load a trained model and translate in beam search fashion."""
 
@@ -47,13 +47,13 @@ class Translator(nn.Module):
 
         memory = self.model.encode(src_seq)
         dec_output = self._model_decode(self.init_seq, memory)
-        dec_op_permuted = dec_output[:, -1, :]
+        dec_op_permuted = dec_output[-1, :, :]
         best_k_probs, best_k_idx = dec_op_permuted.topk(beam_size)
 
         scores = torch.log(best_k_probs).view(beam_size)
         gen_seq = self.blank_seqs.clone().detach()
         gen_seq[:, 1] = best_k_idx[0]
-        memory = memory.repeat(beam_size, 1, 1)
+        memory = memory.repeat(1, beam_size, 1)
         return memory, gen_seq, scores
 
     def _get_the_best_score_and_idx(self, gen_seq, dec_output, scores, step):
@@ -62,7 +62,8 @@ class Translator(nn.Module):
         beam_size = self.beam_size
 
         # Get k candidates for each beam, k^2 candidates in total.
-        best_k2_probs, best_k2_idx = dec_output[:, -1, :].topk(beam_size)
+        dec_op_permuted = dec_output[-1, :, :]
+        best_k2_probs, best_k2_idx = dec_op_permuted.topk(beam_size)
 
         # Include the previous scores.
         scores = torch.log(best_k2_probs).view(beam_size, -1) + scores.view(
@@ -86,21 +87,21 @@ class Translator(nn.Module):
 
         return gen_seq, scores
 
-    def translate_sentence(self, src_seq):
+    def translate_sentence(self, src):
         # Only accept batch size equals to 1 in this function.
         # TODO: expand to batch operation.
-        assert src_seq.size(0) == 1
+        assert src.size(0) == 1
 
         trg_eos_idx = self.trg_eos_idx
         max_seq_len, beam_size, alpha = self.max_seq_len, self.beam_size, self.alpha
 
         with torch.no_grad():
-            enc_output, gen_seq, scores = self._get_init_state(src_seq)
+            memory, gen_seq, scores = self._get_init_state(src)
 
             ans_idx = 0  # default
             for step in range(2, max_seq_len):  # decode up to max length
-                gen_seq_ip = gen_seq[:, :step]
-                dec_output = self._model_decode(gen_seq_ip, enc_output)
+                gen_seq_ip = gen_seq[:, :step].transpose(0, 1)
+                dec_output = self._model_decode(gen_seq_ip, memory)
                 gen_seq, scores = self._get_the_best_score_and_idx(
                     gen_seq, dec_output, scores, step
                 )

@@ -46,3 +46,4 @@ def test_model(
             print(
                 f"Predicted equation : {generate_equation(model, weights, search_type)}"
             )
+            print("---------------------------------")
