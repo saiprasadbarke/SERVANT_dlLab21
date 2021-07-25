@@ -13,6 +13,7 @@ class MLPEncoder(nn.Module):
         super(MLPEncoder, self).__init__()
         # define network layers
         self.input_size = input_size
+        self.layer_norm0 = nn.LayerNorm(input_size)
         self.fc1 = nn.Linear(in_features=input_size, out_features=hidden_size)
         self.layer_norm1 = nn.LayerNorm(hidden_size)
         self.fc2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
@@ -24,7 +25,8 @@ class MLPEncoder(nn.Module):
 
     def forward(self, x):
         # define forward pass
-        output = self.fc1(x)
+        output = self.layer_norm0(x)
+        output = self.fc1(output)
         output = self.layer_norm1(output)
         output = self.silu(output)
         output = self.fc2(output)

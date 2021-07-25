@@ -1,5 +1,4 @@
 # Local
-from torch.functional import norm
 from equations_weights_dataset import EquationsWeightsDataset
 from parse_weights_equations import ParseWeightsAndEquationsJson
 from mlp_encoder import MLPEncoder
@@ -14,6 +13,7 @@ from vocab_transform import VOCAB_TRANSFORM
 from inference import test_model
 
 # External
+from typing import List
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -22,6 +22,7 @@ import torch.nn as nn
 import torch
 from timeit import default_timer as timer
 from numpy import inf
+from json import dump
 
 
 def create_train_val_test_dataloaders(root_dir, batch_size):
@@ -69,20 +70,19 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     return train_dataloader, val_dataloader, test_dataloader
 
 
-def create_model():
+def create_model(
+    n_layers_decoder: int,
+    n_heads_decoder: int,
+    decoder_layer_feed_forward_dimension: int,
+):
 
     # Encoder parameters
     encoder_input = 128
     encoder_hidden = 256
     encoder_output = embedding_size = 512
 
-    # Decoder parameters
-    n_layers_decoder = 6
-
     # Decoder layer parameters
-    n_heads_decoder = 8
     decoder_layer_activation_function = "gelu"
-    decoder_layer_feed_forward_dimension = 512
     decoder_layer_dropout = 0.1
 
     # Other parameters
@@ -147,7 +147,11 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
         batch_size=batch_size,
     )
     # Create model
-    model = create_model()
+    model = create_model(
+        n_heads_decoder=8,
+        n_layers_decoder=6,
+        decoder_layer_feed_forward_dimension=1024,
+    )
     optimizer = optim.Adam(model.parameters(), lr=1e-05)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=1, eta_min=1e-06
@@ -163,11 +167,13 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
     print("Training started...")
     for epoch in range(1, n_epochs + 1):
         start_time = timer()
-        training_loss = train_model(
-            train_dataloader, model, optimizer, scheduler, criterion, DEVICE
-        )
+        with torch.set_grad_enabled(True):
+            training_loss = train_model(
+                train_dataloader, model, optimizer, scheduler, criterion, DEVICE
+            )
         end_time = timer()
-        validation_loss = eval_model(val_dataloader, model, criterion, DEVICE)
+        with torch.no_grad():
+            validation_loss = eval_model(val_dataloader, model, criterion, DEVICE)
         print(
             (
                 f"Epoch: {epoch}, Train loss: {training_loss:.3f}, Val loss: {validation_loss:.3f}, "
@@ -175,7 +181,7 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
             )
         )
         if validation_loss < best_val_loss:
-            torch.save(model.state_dict(), f"./models/{run_id}_model.pth")
+            torch.save(model.state_dict(), f"./runs/{run_id}/model_{run_id}.pth")
             best_val_loss = validation_loss
             epochs_no_improve = 0
         else:
@@ -186,13 +192,26 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
                 break
         training_losses.append(training_loss)
         validation_losses.append(validation_loss)
-    test_loss = eval_model(test_dataloader, model, criterion, DEVICE)
-    print(f"Final test loss : {test_loss}")
     return model, training_losses, validation_losses, test_dataloader
 
 
 if __name__ == "__main__":
 
+    run_id = "bigrun_3"
+    batch_size = 16
+    n_epochs = 100
     model, training_losses, validation_losses, test_dataloader = train_network(
-        batch_size=16, n_epochs=50, root_dir_dataset=root_dir, run_id="bigrun_2"
+        batch_size=batch_size,
+        n_epochs=n_epochs,
+        root_dir_dataset=root_dir,
+        run_id=run_id,
     )
+
+    output_dict = {
+        "batch_size": batch_size,
+        "training_losses": training_losses,
+        "validation_losses": validation_losses,
+    }
+
+    with open(f"./runs/{run_id}/train_val_curves_{run_id}.json", "w") as outfile:
+        dump(output_dict, outfile)

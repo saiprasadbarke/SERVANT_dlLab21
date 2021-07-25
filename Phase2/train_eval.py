@@ -17,7 +17,7 @@ def train_model(
     batch_losses = []
     training_loss = 0.0
     # training loop
-    for _idx, data in enumerate(train_dataloader):
+    for data in train_dataloader:
         source_weights, target_embedded_equation = data
         source_weights, target_embedded_equation = (
             source_weights.to(device),
@@ -55,32 +55,32 @@ def eval_model(
     criterion,
     device,
 ):
-    with torch.no_grad():
-        val_losses = []
-        validation_loss = 0.0
-        for _idx, data in enumerate(validation_dataloader):
-            source_weights, target_embedded_equation = data
-            source_weights, target_embedded_equation = (
-                source_weights.to(device),
-                target_embedded_equation.to(device),
-            )
-            target_embedded_equation_input = target_embedded_equation[:-1, :]
-            tgt_mask, tgt_padding_mask = create_mask(target_embedded_equation_input)
-            model.eval()
-            mlp_transformerdecoder_logits = model(
-                source_weights,
-                target_embedded_equation_input,
-                tgt_mask,
-                tgt_padding_mask,
-            )
-            target_embedded_equation_out = target_embedded_equation[1:, :].reshape(-1)
-            mlp_transformerdecoder_logits_out = mlp_transformerdecoder_logits.reshape(
-                -1, mlp_transformerdecoder_logits.shape[-1]
-            )
-            loss = criterion(
-                mlp_transformerdecoder_logits_out,
-                target_embedded_equation_out,
-            )
-            val_losses.append(loss.item())
-        validation_loss = np.mean(val_losses)
+
+    val_losses = []
+    validation_loss = 0.0
+    for data in validation_dataloader:
+        source_weights, target_embedded_equation = data
+        source_weights, target_embedded_equation = (
+            source_weights.to(device),
+            target_embedded_equation.to(device),
+        )
+        target_embedded_equation_input = target_embedded_equation[:-1, :]
+        tgt_mask, tgt_padding_mask = create_mask(target_embedded_equation_input)
+        model.eval()
+        mlp_transformerdecoder_logits = model(
+            source_weights,
+            target_embedded_equation_input,
+            tgt_mask,
+            tgt_padding_mask,
+        )
+        target_embedded_equation_out = target_embedded_equation[1:, :].reshape(-1)
+        mlp_transformerdecoder_logits_out = mlp_transformerdecoder_logits.reshape(
+            -1, mlp_transformerdecoder_logits.shape[-1]
+        )
+        loss = criterion(
+            mlp_transformerdecoder_logits_out,
+            target_embedded_equation_out,
+        )
+        val_losses.append(loss.item())
+    validation_loss = np.mean(val_losses)
     return validation_loss
