@@ -192,7 +192,7 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
                 break
         training_losses.append(training_loss)
         validation_losses.append(validation_loss)
-    return model, training_losses, validation_losses, test_dataloader
+    return model, training_losses, validation_losses
 
 
 if __name__ == "__main__":
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     run_id = "bigrun_3"
     batch_size = 16
     n_epochs = 100
-    model, training_losses, validation_losses, test_dataloader = train_network(
+    model, training_losses, validation_losses = train_network(
         batch_size=batch_size,
         n_epochs=n_epochs,
         root_dir_dataset=root_dir,
