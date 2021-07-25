@@ -11,7 +11,7 @@ from train_eval import train_model, eval_model
 from data_helpers import collate_fn
 from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
 from vocab_transform import VOCAB_TRANSFORM
-from test_model import test_model
+from inference import test_model
 
 # External
 from sklearn.model_selection import train_test_split
@@ -35,7 +35,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         weights,
         embedded_equations,
-        test_size=0.1,
+        test_size=0.001,
         random_state=42,
     )
     (
@@ -46,7 +46,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         X_train_val_weights,
         y_train_val_embedded_equations,
-        test_size=0.15,
+        test_size=0.2,
         random_state=42,
     )
     train_dataset = EquationsWeightsDataset(X_train_weights, y_train_embedded_equations)
@@ -159,7 +159,6 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
     n_epochs_stop = 5
     training_losses = []
     validation_losses = []
-
     # Train the model
     print("Training started...")
     for epoch in range(1, n_epochs + 1):
@@ -187,13 +186,13 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
                 break
         training_losses.append(training_loss)
         validation_losses.append(validation_loss)
-
+    test_loss = eval_model(test_dataloader, model, criterion, DEVICE)
+    print(f"Final test loss : {test_loss}")
     return model, training_losses, validation_losses, test_dataloader
 
 
 if __name__ == "__main__":
 
     model, training_losses, validation_losses, test_dataloader = train_network(
-        batch_size=4, n_epochs=50, root_dir_dataset=root_dir_test, run_id="testrun_2"
+        batch_size=16, n_epochs=50, root_dir_dataset=root_dir, run_id="bigrun_2"
     )
-    test_model(test_dataloader, model)
