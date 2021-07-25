@@ -198,7 +198,7 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
 if __name__ == "__main__":
 
     run_id = "bigrun_3"
-    batch_size = 16
+    batch_size = 32
     n_epochs = 100
     model, training_losses, validation_losses = train_network(
         batch_size=batch_size,
