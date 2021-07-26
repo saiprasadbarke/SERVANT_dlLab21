@@ -128,6 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-datasets/
-
+datasets
+network_wts_eqs_dataset
+models
+runs
 .venv*
+project-venv
