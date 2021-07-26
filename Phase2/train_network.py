@@ -11,6 +11,7 @@ from data_helpers import collate_fn
 from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
 from vocab_transform import VOCAB_TRANSFORM
 from inference import test_model
+from helper import check_dir_exists
 
 # External
 from typing import List
@@ -165,6 +166,7 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
     validation_losses = []
     # Train the model
     print("Training started...")
+    check_dir_exists(f"./runs/{run_id}")
     for epoch in range(1, n_epochs + 1):
         start_time = timer()
         with torch.set_grad_enabled(True):
@@ -197,8 +199,8 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
 
 if __name__ == "__main__":
 
-    run_id = "bigrun_3"
-    batch_size = 32
+    run_id = "bigrun_4_16seq"
+    batch_size = 16
     n_epochs = 100
     model, training_losses, validation_losses = train_network(
         batch_size=batch_size,

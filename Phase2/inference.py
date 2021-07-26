@@ -7,6 +7,8 @@ from torch import transpose, device, tensor
 from symbolic_regression_transformer import SymbolicRegressionTransformer
 from torch.utils.data import DataLoader
 from greedy_search import greedy_decode
+from parse_weights_equations import ParseWeightsAndEquationsJson
+from evaluate_bleu import calculate_ngram_score
 
 # actual function to translate input sentence into target language
 def generate_equation(model: nn.Module, src_list: List, search_type: str):
@@ -42,8 +44,18 @@ def test_model(
                 .replace("<eos>", "")
                 .replace("<pad>", "")
             )
+            generated_equation = generate_equation(model, weights, search_type)
             print(f"Ground Truth: {equation_string}")
-            print(
-                f"Predicted equation : {generate_equation(model, weights, search_type)}"
+            print(f"Predicted equation : {generated_equation}")
+            tokenized_reference = [
+                ParseWeightsAndEquationsJson.tokenize_equation(equation_string)
+            ]
+            tokenized_candidate = ParseWeightsAndEquationsJson.tokenize_equation(
+                generated_equation
             )
-            print("---------------------------------")
+            for i in range(1, 5):
+                n_gram_score = calculate_ngram_score(
+                    tokenized_reference, tokenized_candidate, i
+                )
+                print(f"BLEU-{i} score is {n_gram_score}")
+            print("---------------------------------------")
