@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from masking import create_mask
-from settings import PAD_IDX, BOS_IDX, EOS_IDX, DEVICE
+from settings import PAD_IDX, BOS_IDX, EOS_IDX
 
 # Implementation from https://github.com/jadore801120/attention-is-all-you-need-pytorch
 class Translator(nn.Module):

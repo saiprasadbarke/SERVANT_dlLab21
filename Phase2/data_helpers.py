@@ -1,7 +1,6 @@
 from torch.nn.utils.rnn import pad_sequence
-from typing import List, Iterable
+from typing import List
 from torch import cat, tensor
-from torchtext.vocab import Vocab, build_vocab_from_iterator
 from settings import (
     BOS_IDX,
     EOS_IDX,

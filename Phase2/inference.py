@@ -1,4 +1,4 @@
-from settings import DEVICE, EOS_IDX, BOS_IDX
+from settings import BOS_IDX
 import torch.nn as nn
 from typing import List
 from vocab_transform import VOCAB_TRANSFORM

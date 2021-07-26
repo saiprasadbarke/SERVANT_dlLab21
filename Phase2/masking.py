@@ -1,4 +1,4 @@
-from torch import zeros, ones, triu, bool
+from torch import ones, triu
 from settings import PAD_IDX, DEVICE
 
 

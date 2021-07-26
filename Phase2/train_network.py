@@ -8,7 +8,7 @@ from token_embedding import TokenEmbedding
 from positional_encoding import PositionalEncoding
 from train_eval import train_model, eval_model
 from data_helpers import collate_fn
-from settings import DEVICE, PAD_IDX, root_dir, root_dir_test
+from settings import DEVICE, PAD_IDX, root_dir_50k_16, root_dir_1k, root_dir_100k
 from vocab_transform import VOCAB_TRANSFORM
 from inference import test_model
 from helper import check_dir_exists
@@ -139,11 +139,7 @@ def create_model(
 
 def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id: str):
     # Return all dataloaders
-    (
-        train_dataloader,
-        val_dataloader,
-        test_dataloader,
-    ) = create_train_val_test_dataloaders(
+    (train_dataloader, val_dataloader, _,) = create_train_val_test_dataloaders(
         root_dir=root_dir_dataset,
         batch_size=batch_size,
     )
@@ -205,7 +201,7 @@ if __name__ == "__main__":
     model, training_losses, validation_losses = train_network(
         batch_size=batch_size,
         n_epochs=n_epochs,
-        root_dir_dataset=root_dir,
+        root_dir_dataset=root_dir_100k,
         run_id=run_id,
     )
 
