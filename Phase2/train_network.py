@@ -173,7 +173,7 @@ def train_network(
     # Early stopping criteria
     best_val_loss = inf
     epochs_no_improve = 0
-    n_epochs_stop = 5
+    n_epochs_stop = 15
     training_losses = []
     validation_losses = []
     # Train the model
@@ -245,7 +245,7 @@ if __name__ == "__main__":
         type=str,
         dest="dataset",
         default="test_dataset",
-        help="Specify a dataset to train the network on",
+        help="Specify a dataset to train the network on. Possible options are '100K_non_uniform', '10k_uniform', '50k_16', '14_16_18_uniform'",
     )
     args = parser.parse_args()
     # Load the required dataset from path

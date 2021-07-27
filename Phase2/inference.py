@@ -30,6 +30,8 @@ def generate_equation(model: nn.Module, src_list: List, search_type: str):
 def test_model(
     test_dataloader: DataLoader, model: SymbolicRegressionTransformer, search_type: str
 ):
+    ground_truth_equations = []
+    predicted_equations = []
     for weights_list, equation_tokens in test_dataloader:
         equation_tokens = transpose(equation_tokens, 0, 1)
         weights_list, equation_tokens = (
@@ -53,9 +55,12 @@ def test_model(
             tokenized_candidate = ParseWeightsAndEquationsJson.tokenize_equation(
                 generated_equation
             )
+            ground_truth_equations.append(equation_string)
+            predicted_equations.append(generated_equation)
             for i in range(1, 5):
                 n_gram_score = calculate_ngram_score(
                     tokenized_reference, tokenized_candidate, i
                 )
                 print(f"BLEU-{i} score is {n_gram_score}")
             print("---------------------------------------")
+    return ground_truth_equations, predicted_equations

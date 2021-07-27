@@ -10,6 +10,7 @@ from settings import (
     root_dir_10k_uniform,
     root_dir_14_16_18_uniform,
 )
+from nearness_score import compute_nearness_signs
 
 # External
 from torch import load
@@ -32,7 +33,7 @@ if __name__ == "__main__":
         "dataset",
         type=str,
         default="test_dataset",
-        help="Specify a dataset to train the network on",
+        help="Specify a dataset to test the network on",
     )
     parser.add_argument(
         "--search_type",
@@ -62,4 +63,8 @@ if __name__ == "__main__":
     sys.stdout = open(f"./runs/{args.run_id}/test_results_{args.run_id}.txt", "w")
     print(f"Running test with args: {args}")
     print(f"Final test loss : {test_loss}")
-    test_model(test_dataloader, model, args.search_type)
+    ground_truth_equations, predicted_equations = test_model(
+        test_dataloader, model, args.search_type
+    )
+    nearness_score = compute_nearness_signs(ground_truth_equations, predicted_equations)
+    print(f"Nearness score for correct prediction of signs is {nearness_score} %")
