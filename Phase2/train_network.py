@@ -8,7 +8,15 @@ from token_embedding import TokenEmbedding
 from positional_encoding import PositionalEncoding
 from train_eval import train_model, eval_model
 from data_helpers import collate_fn
-from settings import DEVICE, PAD_IDX, root_dir_50k_16, root_dir_1k, root_dir_100k
+from settings import (
+    DEVICE,
+    PAD_IDX,
+    root_dir_50k_16,
+    root_dir_1k_test,
+    root_dir_100k_non_uniform,
+    root_dir_10k_uniform,
+    root_dir_14_16_18_uniform,
+)
 from vocab_transform import VOCAB_TRANSFORM
 from inference import test_model
 from helper import check_dir_exists
@@ -24,9 +32,11 @@ import torch
 from timeit import default_timer as timer
 from numpy import inf
 from json import dump
+from argparse import ArgumentParser
 
 
 def create_train_val_test_dataloaders(root_dir, batch_size):
+    """Create training, validation and test dataloaders for the training procedure"""
     data = ParseWeightsAndEquationsJson(root_dir)
     embedded_equations, weights = data.tokenized_equations, data.weights
     (
@@ -75,8 +85,8 @@ def create_model(
     n_layers_decoder: int,
     n_heads_decoder: int,
     decoder_layer_feed_forward_dimension: int,
-):
-
+) -> SymbolicRegressionTransformer:
+    """Create a model from the arguments"""
     # Encoder parameters
     encoder_input = 128
     encoder_hidden = 256
@@ -137,7 +147,13 @@ def create_model(
     return mlp_transformer_decoder.to(DEVICE)
 
 
-def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id: str):
+def train_network(
+    batch_size: int,
+    n_epochs: int,
+    learning_rate: float,
+    root_dir_dataset: str,
+    run_id: str,
+):
     # Return all dataloaders
     (train_dataloader, val_dataloader, _,) = create_train_val_test_dataloaders(
         root_dir=root_dir_dataset,
@@ -149,7 +165,7 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
         n_layers_decoder=6,
         decoder_layer_feed_forward_dimension=1024,
     )
-    optimizer = optim.Adam(model.parameters(), lr=1e-05)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=1, eta_min=1e-06
     )
@@ -161,8 +177,8 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
     training_losses = []
     validation_losses = []
     # Train the model
-    print("Training started...")
     check_dir_exists(f"./runs/{run_id}")
+    print("Training started...")
     for epoch in range(1, n_epochs + 1):
         start_time = timer()
         with torch.set_grad_enabled(True):
@@ -195,21 +211,73 @@ def train_network(batch_size: int, n_epochs: int, root_dir_dataset: str, run_id:
 
 if __name__ == "__main__":
 
-    run_id = "bigrun_4_16seq"
-    batch_size = 16
-    n_epochs = 100
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        dest="batch_size",
+        default=4,
+        help="Specify a batch size for the train-validation dataloader",
+    )
+    parser.add_argument(
+        "--run_id",
+        type=str,
+        dest="run_id",
+        default="test_run",
+        help="Specify a run_id for the training run",
+    )
+    parser.add_argument(
+        "--n_epochs",
+        type=int,
+        dest="n_epochs",
+        default=50,
+        help="Specify the number of epochs for training the network",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        dest="learning_rate",
+        default="1e-05",
+        help="Specify the learning rate for the training operation",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        dest="dataset",
+        default="test_dataset",
+        help="Specify a dataset to train the network on",
+    )
+    args = parser.parse_args()
+    # Load the required dataset from path
+    if args.dataset == "100K_non_uniform":
+        dataset = root_dir_100k_non_uniform
+    elif args.dataset == "10k_uniform":
+        dataset = root_dir_10k_uniform
+    elif args.dataset == "50k_16":
+        dataset = root_dir_50k_16
+    elif args.dataset == "14_16_18_uniform":
+        dataset = root_dir_14_16_18_uniform
+    elif args.dataset == "test_dataset":
+        dataset = root_dir_1k_test
+    # Call the train network function
+
+    print(f"Training with arguments :{args}")
     model, training_losses, validation_losses = train_network(
-        batch_size=batch_size,
-        n_epochs=n_epochs,
-        root_dir_dataset=root_dir_100k,
-        run_id=run_id,
+        batch_size=args.batch_size,
+        n_epochs=args.n_epochs,
+        root_dir_dataset=dataset,
+        run_id=args.run_id,
+        learning_rate=args.learning_rate,
     )
 
     output_dict = {
-        "batch_size": batch_size,
+        "batch_size": args.batch_size,
+        "learning_rate": args.learning_rate,
         "training_losses": training_losses,
         "validation_losses": validation_losses,
     }
 
-    with open(f"./runs/{run_id}/train_val_curves_{run_id}.json", "w") as outfile:
+    output_path = f"./runs/{args.run_id}/train_val_curves_{args.run_id}.json"
+    with open(output_path, "w") as outfile:
         dump(output_dict, outfile)
+    print(f"Network training complete. Dumped output data at path : {output_path}")
