@@ -21,7 +21,7 @@ def generate_equation(model: nn.Module, src_list: List, search_type: str):
         translator = Translator(model, beam_size=5, max_seq_len=20)
         tgt_tokens = translator.translate_sentence(src)
     return (
-        " ".join(VOCAB_TRANSFORM.lookup_tokens(list(tgt_tokens.cpu().numpy())))
+        "".join(VOCAB_TRANSFORM.lookup_tokens(list(tgt_tokens.cpu().numpy())))
         .replace("<bos>", "")
         .replace("<eos>", "")
     )

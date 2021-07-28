@@ -35,7 +35,7 @@ from json import dump
 from argparse import ArgumentParser
 
 
-def create_train_val_test_dataloaders(root_dir, batch_size):
+def create_train_val_test_dataloaders(root_dir, batch_size, train_test_ratio):
     """Create training, validation and test dataloaders for the training procedure"""
     data = ParseWeightsAndEquationsJson(root_dir)
     embedded_equations, weights = data.tokenized_equations, data.weights
@@ -47,7 +47,7 @@ def create_train_val_test_dataloaders(root_dir, batch_size):
     ) = train_test_split(
         weights,
         embedded_equations,
-        test_size=0.001,
+        test_size=train_test_ratio,
         random_state=42,
     )
     (
@@ -156,8 +156,7 @@ def train_network(
 ):
     # Return all dataloaders
     (train_dataloader, val_dataloader, _,) = create_train_val_test_dataloaders(
-        root_dir=root_dir_dataset,
-        batch_size=batch_size,
+        root_dir=root_dir_dataset, batch_size=batch_size, train_test_ratio=0.001
     )
     # Create model
     model = create_model(
