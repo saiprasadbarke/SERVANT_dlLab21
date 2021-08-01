@@ -55,7 +55,7 @@ if __name__ == "__main__":
     elif args.dataset == "test_dataset":
         dataset = root_dir_1k_test
 
-    _, _, test_dataloader = create_train_val_test_dataloaders(dataset, 1, 0.1)
+    _, _, test_dataloader = create_train_val_test_dataloaders(dataset, 1, 0.005)
     model = create_model(6, 8, 1024)
     model.load_state_dict(load(f"./runs/{args.run_id}/model_{args.run_id}.pth"))
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)

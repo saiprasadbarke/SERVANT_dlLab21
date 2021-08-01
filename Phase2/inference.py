@@ -30,6 +30,12 @@ def generate_equation(model: nn.Module, src_list: List, search_type: str):
 def test_model(
     test_dataloader: DataLoader, model: SymbolicRegressionTransformer, search_type: str
 ):
+    bleu_score = {
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+    }
     ground_truth_equations = []
     predicted_equations = []
     for weights_list, equation_tokens in test_dataloader:
@@ -61,6 +67,9 @@ def test_model(
                 n_gram_score = calculate_ngram_score(
                     tokenized_reference, tokenized_candidate, i
                 )
+                bleu_score[i].append(n_gram_score)
                 print(f"BLEU-{i} score is {n_gram_score}")
             print("---------------------------------------")
+    for key, value in bleu_score.items():
+        print(f"Mean {key}-BLEU score is {(sum(value) / len(value))}")
     return ground_truth_equations, predicted_equations
